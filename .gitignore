@@ -1,0 +1,12 @@
+warno_deck_ui_macro_calibration.json
+*.profile2
+*.sav3
+remotecache.vdf
+backups/
+profile-safety-backup-*/
+source-data/
+*.ndfbin
+*.uncompressed.ndfbin
+*.zip
+*.7z
+*.rar
