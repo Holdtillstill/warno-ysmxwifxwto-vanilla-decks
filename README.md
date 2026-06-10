@@ -51,6 +51,7 @@ powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Mo
 - `docs/usage.md`: calibration and import workflow.
 - `docs/backup-and-restore.md`: profile backup notes.
 - `docs/technical-notes.md`: deck-code and icon limitations.
+- `docs/backlog.md`: possible future improvements.
 - `scripts/warno_deck_ui_macro.ps1`: automated UI importer.
 - `scripts/warno_profile_backup.ps1`: profile backup helper.
 - `scripts/warno_deck_clipboard_importer.ps1`: manual clipboard fallback.
