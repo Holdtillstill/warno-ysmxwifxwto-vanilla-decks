@@ -65,7 +65,7 @@ powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Mo
 
 - `Limited`: recommended. Uses YSM/WiF/WTO-compatible limited Freedom divisions.
 - `Unlimited`: uses YSM/WiF/WTO-compatible unlimited Freedom divisions.
-- `OfficialIcons`: normal vanilla deck codes with original vanilla division IDs. Test one deck first.
+- `OfficialIcons`: experimental normal vanilla deck codes with original vanilla division IDs. These can be rejected while the mod is active and require `-AllowExperimentalOfficialIcons`.
 - `ModdedOfficialIcons`: experimental and guarded because it was observed to fail in WARNO.
 
 ## Speed Controls

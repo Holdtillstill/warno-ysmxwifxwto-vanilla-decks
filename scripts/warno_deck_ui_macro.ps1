@@ -128,6 +128,25 @@ function Paste-ClipboardText {
     Send-CtrlKey -VirtualKey 0x56
 }
 
+function Warn-IfWarnoNeedsRestart {
+    $modConfigPath = Join-Path $env:USERPROFILE "Saved Games\EugenSystems\WARNO\mod\Config.ini"
+    if (!(Test-Path -LiteralPath $modConfigPath)) {
+        return
+    }
+
+    $modConfig = Get-Item -LiteralPath $modConfigPath
+    $warnoProcesses = @(Get-CimInstance Win32_Process -Filter "name = 'WARNO.exe'" -ErrorAction SilentlyContinue)
+    foreach ($process in $warnoProcesses) {
+        $startedAt = $process.CreationDate
+        if ($startedAt -is [string]) {
+            $startedAt = [Management.ManagementDateTimeConverter]::ToDateTime($process.CreationDate)
+        }
+        if ($startedAt -lt $modConfig.LastWriteTime) {
+            Write-Warning "WARNO.exe started before WARNO's mod Config.ini was last written. If modded deck codes are rejected, fully close WARNO and reopen it so the active mod is loaded."
+        }
+    }
+}
+
 if ($Calibrate) {
     Write-Host "WARNO deck UI macro calibration"
     Write-Host "Put WARNO in windowed or borderless mode. Do not move or resize the window after calibration."
@@ -196,8 +215,8 @@ if (!$rows[0].PSObject.Properties.Name.Contains($codeColumn)) {
     throw "CSV does not contain column '$codeColumn'. Regenerate the deck-code CSV before using mode '$Mode'."
 }
 
-if ($Mode -eq "ModdedOfficialIcons" -and !$AllowExperimentalOfficialIcons) {
-    throw "ModdedOfficialIcons mode is experimental and was observed to fail in WARNO with 'The string does not represent a valid Battlegroup'. Use -Mode Limited, or pass -AllowExperimentalOfficialIcons if you are intentionally retesting."
+if (($Mode -eq "OfficialIcons" -or $Mode -eq "ModdedOfficialIcons") -and !$AllowExperimentalOfficialIcons) {
+    throw "$Mode mode is experimental and can fail in WARNO with 'The string does not represent a valid Battlegroup' while YSM x WiF x WTO is active. Use -Mode Limited for normal imports, or pass -AllowExperimentalOfficialIcons if you are intentionally testing official-emblem codes one deck at a time."
 }
 
 if ($Mode -eq "OfficialIcons") {
@@ -211,6 +230,7 @@ if ($Count -gt 0) {
 
 Write-Host "Mode: $Mode"
 Write-Host "Rows: $StartAt through $endExclusive of $($rows.Count)"
+Warn-IfWarnoNeedsRestart
 Write-Host "Starting in $StartDelaySeconds seconds. Switch focus to WARNO and leave the Battlegroups screen visible."
 Start-Sleep -Seconds $StartDelaySeconds
 

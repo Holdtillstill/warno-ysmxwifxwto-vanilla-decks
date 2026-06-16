@@ -171,9 +171,11 @@ def write_markdown(rows: list[dict[str, str]]) -> None:
     lines = [
         "# YSM x WiF x WTO - Vanilla Starting Deck Import Codes",
         "",
-        "Generated from WARNO vanilla `base.zip` starting decks and re-encoded for Workshop `3554281691` / deck format `242`.",
+        "Generated from WARNO vanilla `base.zip` starting decks and re-encoded for YSM Freedom divisions.",
         "",
         "Use the Limited codes first. The Unlimited codes target the Freedom unlimited divisions.",
+        "",
+        "The Limited and Unlimited codes match current in-game exports from YSM x WiF x WTO: no Workshop header, YSM Freedom division IDs, and 17-bit unit IDs.",
         "",
         "Vanilla official icon codes are normal non-modded deck codes with the original division ID/icon.",
         "",
@@ -207,8 +209,18 @@ def main() -> None:
         row["source_division"] = str(deck["division"])
         row["cards"] = str(len(cards))
         row["vanilla_deck_name_key"] = str(deck["deck_name_key"])
-        row["ysmxwifxwto_limited_code"] = encode_deck(cards, DIVISION_IDS[(alliance, "limited")])
-        row["ysmxwifxwto_unlimited_code"] = encode_deck(cards, DIVISION_IDS[(alliance, "unlimited")])
+        row["ysmxwifxwto_limited_code"] = encode_deck(
+            cards,
+            DIVISION_IDS[(alliance, "limited")],
+            modded=False,
+            unit_id_bits=UNIT_ID_BITS_FOR_MODDED_DECKS,
+        )
+        row["ysmxwifxwto_unlimited_code"] = encode_deck(
+            cards,
+            DIVISION_IDS[(alliance, "unlimited")],
+            modded=False,
+            unit_id_bits=UNIT_ID_BITS_FOR_MODDED_DECKS,
+        )
         source_division = str(deck["division"])
         if source_division not in division_ids:
             raise RuntimeError(f"Missing division serializer id for {source_division}")

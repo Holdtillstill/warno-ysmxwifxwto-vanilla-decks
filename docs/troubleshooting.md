@@ -5,6 +5,9 @@
 Use `-Mode Limited`. This was the tested working path.
 
 `OfficialIcons` and `ModdedOfficialIcons` may fail depending on how WARNO validates divisions under the active mod.
+The UI macro blocks both modes unless you pass `-AllowExperimentalOfficialIcons`.
+
+If `-Mode Limited` also fails, fully close WARNO and reopen it. WARNO reads the active-mod config at startup, so changing/enabling the mod while the game is already open can leave the current session unable to import modded deck codes.
 
 ## Macro Clicks Import Before Naming
 

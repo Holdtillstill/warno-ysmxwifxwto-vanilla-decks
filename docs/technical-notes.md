@@ -2,18 +2,21 @@
 
 ## Target Mod
 
-The generated modded codes target Steam Workshop item:
+The generated compatibility codes are intended for Steam Workshop item:
 
 ```text
 3554281691
 ```
 
-The mod header used during generation was:
+Current in-game exports from YSM x WiF x WTO were observed to use no Workshop header:
 
 ```text
-workshop_id = 3554281691
-deck_format_version = 242
+modded flag = 0
+division IDs = YSM Freedom division IDs
+unit ID width = 17 bits
 ```
+
+Older Workshop-shared codes used a Workshop header with `workshop_id = 3554281691` and `deck_format_version = 242`, but those strings are rejected by the current mod/game combination.
 
 ## Working Division IDs
 

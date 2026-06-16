@@ -21,7 +21,7 @@ The recommended codes use the mod's Freedom divisions so the decks can import wh
 ## Notes And Limitations
 
 - Per-division official emblems are not reliably available through deck import alone.
-- `OfficialIcons` mode uses normal vanilla deck codes and should be tested one deck at a time.
+- `OfficialIcons` mode uses normal vanilla deck codes and is guarded as experimental because it can be rejected while the mod is active.
 - `ModdedOfficialIcons` is experimental and may be rejected by WARNO with: `The string does not represent a valid Battlegroup`.
 
 ## Quick Start
