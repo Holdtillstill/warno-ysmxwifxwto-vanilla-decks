@@ -20,10 +20,12 @@ powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Ca
 powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Mode Limited -Count 1 -StartDelaySeconds 5
 ```
 
-After a YSM x WiF x WTO update, re-check the current Freedom division IDs:
+After a YSM x WiF x WTO update, re-check the current Freedom division IDs and unit-table size, then regenerate the CSV from that same `Division.ndfbin`:
 
 ```powershell
 python .\tools\extract_ysmxwifxwto_division_ids.py "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"
+$env:WARNO_YSMXWIFXWTO_DIVISION_NDFBIN = "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"
+python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
 ```
 
 Delete the calibration file before committing:

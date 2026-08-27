@@ -190,7 +190,7 @@ def parse_first_object(data: bytes) -> tuple[int, list[tuple[int, tuple[str, obj
     return class_id, values
 
 
-def extract_division_ids(path: Path) -> dict[str, int]:
+def extract_serializer_ids(path: Path) -> tuple[dict[str, int], dict[str, int]]:
     ndfbin = read_ndfbin(path)
     sections = parse_toc(ndfbin)
     classes = parse_string_table(section_payload(ndfbin, sections, "CLAS"))
@@ -203,16 +203,22 @@ def extract_division_ids(path: Path) -> dict[str, int]:
         raise ValueError(f"Expected first object to be TDeckSerializerEntries, got {classes[class_id]}")
 
     division_map: list[tuple[tuple[str, object], tuple[str, object]]] | None = None
+    unit_map: list[tuple[tuple[str, object], tuple[str, object]]] | None = None
     for property_id, value in object_values:
         property_name, _ = properties[property_id]
         if property_name == "DivisionIds":
             if value[0] != "MapList":
                 raise ValueError("DivisionIds is not a MapList")
             division_map = value[1]  # type: ignore[assignment]
-            break
+        elif property_name == "UnitIds":
+            if value[0] != "MapList":
+                raise ValueError("UnitIds is not a MapList")
+            unit_map = value[1]  # type: ignore[assignment]
 
     if division_map is None:
         raise ValueError("Could not find DivisionIds on TDeckSerializerEntries")
+    if unit_map is None:
+        raise ValueError("Could not find UnitIds on TDeckSerializerEntries")
 
     object_id_to_serializer_id: dict[int, int] = {}
     for key, value in division_map:
@@ -239,17 +245,40 @@ def extract_division_ids(path: Path) -> dict[str, int]:
             raise ValueError(f"Expected one export match for {descriptor}, found {len(matches)}")
         descriptor_to_id[descriptor] = object_id_to_serializer_id[matches[0]]
 
-    return descriptor_to_id
+    unit_ids: dict[str, int] = {}
+    for key, value in unit_map:
+        if key[0] != "TransTableReference" or value[0] != "UInt32":
+            continue
+        trans_index = int(key[1])
+        if trans_index >= len(trans):
+            raise ValueError(f"UnitIds references missing TRAN index {trans_index}")
+        unit_ids[trans[trans_index]] = int(value[1])
+
+    if not unit_ids:
+        raise ValueError("Could not extract any UnitIds from TDeckSerializerEntries")
+
+    return descriptor_to_id, unit_ids
+
+
+def extract_division_ids(path: Path) -> dict[str, int]:
+    division_ids, _ = extract_serializer_ids(path)
+    return division_ids
+
+
+def extract_unit_ids(path: Path) -> dict[str, int]:
+    _, unit_ids = extract_serializer_ids(path)
+    return unit_ids
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Extract YSM side-wide Freedom division serializer IDs from compiled WARNO Division.ndfbin.")
+    parser = argparse.ArgumentParser(description="Extract YSM serializer IDs from compiled WARNO Division.ndfbin.")
     parser.add_argument("division_ndfbin", type=Path)
     args = parser.parse_args()
 
-    descriptor_to_id = extract_division_ids(args.division_ndfbin)
+    descriptor_to_id, unit_ids = extract_serializer_ids(args.division_ndfbin)
     for label, descriptor in TARGET_DIVISION_DESCRIPTORS.items():
         print(f"{label:14} {descriptor_to_id[descriptor]:5} {descriptor}")
+    print(f"Unit IDs       {len(unit_ids):5} entries")
 
 
 if __name__ == "__main__":

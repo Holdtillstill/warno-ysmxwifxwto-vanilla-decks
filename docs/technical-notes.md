@@ -29,7 +29,7 @@ PACT Limited    = 1634  Descriptor_Deck_Division_YSM_SIDE_PACT_BALANCED
 PACT Unlimited  = 1635  Descriptor_Deck_Division_YSM_SIDE_PACT_UNLIMITED
 ```
 
-Older versions of the mod used four generic YSM division IDs, `932` through `935`. The August 2026 mod update replaced those descriptors with side-wide balanced/unlimited descriptors, so deck codes using the old IDs are rejected as invalid battlegroups.
+Older versions of the mod used four generic YSM division IDs, `932` through `935`. The August 2026 mod update replaced those descriptors with side-wide balanced/unlimited descriptors. It also reordered the mod's unit serializer table. Deck codes need both the current division ID and the current mod unit IDs; mixing the new division IDs with vanilla unit IDs is still rejected as an invalid battlegroup.
 
 ## Why Official Division Emblems Are Hard
 
@@ -64,14 +64,14 @@ $env:WARNO_BASE_DECK_DIR = "C:\path\to\GameData\Generated\Gameplay\Decks"
 python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
 ```
 
-To refresh the YSM Freedom division IDs from the currently installed Workshop mod, also point the generator at the compiled YSM `Division.ndfbin`:
+Point the generator at the compiled YSM `Division.ndfbin` so it can read the current Freedom division IDs and the mod's complete unit-ID table:
 
 ```powershell
 $env:WARNO_YSMXWIFXWTO_DIVISION_NDFBIN = "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"
 python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
 ```
 
-You can inspect only the extracted IDs with:
+You can inspect the extracted Freedom division IDs and unit-table size with:
 
 ```powershell
 python .\tools\extract_ysmxwifxwto_division_ids.py "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"

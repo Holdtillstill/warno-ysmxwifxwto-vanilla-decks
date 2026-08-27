@@ -56,7 +56,7 @@ powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Mo
 - `scripts/warno_profile_backup.ps1`: profile backup helper.
 - `scripts/warno_deck_clipboard_importer.ps1`: manual clipboard fallback.
 - `tools/regenerate_ysmxwifxwto_vanilla_deck_codes.py`: maintainer-only generator.
-- `tools/extract_ysmxwifxwto_division_ids.py`: maintainer helper for reading current YSM Freedom division IDs from `Division.ndfbin`.
+- `tools/extract_ysmxwifxwto_division_ids.py`: maintainer helper for reading current YSM Freedom division and unit IDs from `Division.ndfbin`.
 - `docs/release-checklist.md`: pre-publish safety checklist.
 
 ## Publishing Notes

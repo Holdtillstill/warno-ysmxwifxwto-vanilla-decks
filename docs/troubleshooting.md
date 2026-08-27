@@ -9,7 +9,7 @@ The UI macro blocks both modes unless you pass `-AllowExperimentalOfficialIcons`
 
 If `-Mode Limited` also fails, fully close WARNO and reopen it. WARNO reads the active-mod config at startup, so changing/enabling the mod while the game is already open can leave the current session unable to import modded deck codes.
 
-If this starts immediately after a YSM x WiF x WTO update, the mod may have changed its Freedom division serializer IDs. Re-run the maintainer generator with `WARNO_YSMXWIFXWTO_DIVISION_NDFBIN` set to the current Workshop `Division.ndfbin`.
+If this starts immediately after a YSM x WiF x WTO update, the mod may have changed its Freedom division IDs, its unit IDs, or both. Re-run the maintainer generator with `WARNO_YSMXWIFXWTO_DIVISION_NDFBIN` set to the current Workshop `Division.ndfbin`.
 
 ## Macro Clicks Import Before Naming
 
