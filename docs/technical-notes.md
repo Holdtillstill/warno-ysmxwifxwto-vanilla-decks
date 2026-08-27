@@ -23,11 +23,13 @@ Older Workshop-shared codes used a Workshop header with `workshop_id = 355428169
 The reliable import modes use YSM Freedom division IDs:
 
 ```text
-NATO Unlimited  = 932
-PACT Unlimited  = 933
-NATO Limited    = 934
-PACT Limited    = 935
+NATO Limited    = 1632  Descriptor_Deck_Division_YSM_SIDE_NATO_BALANCED
+NATO Unlimited  = 1633  Descriptor_Deck_Division_YSM_SIDE_NATO_UNLIMITED
+PACT Limited    = 1634  Descriptor_Deck_Division_YSM_SIDE_PACT_BALANCED
+PACT Unlimited  = 1635  Descriptor_Deck_Division_YSM_SIDE_PACT_UNLIMITED
 ```
+
+Older versions of the mod used four generic YSM division IDs, `932` through `935`. The August 2026 mod update replaced those descriptors with side-wide balanced/unlimited descriptors, so deck codes using the old IDs are rejected as invalid battlegroups.
 
 ## Why Official Division Emblems Are Hard
 
@@ -60,6 +62,19 @@ You can override that path:
 ```powershell
 $env:WARNO_BASE_DECK_DIR = "C:\path\to\GameData\Generated\Gameplay\Decks"
 python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
+```
+
+To refresh the YSM Freedom division IDs from the currently installed Workshop mod, also point the generator at the compiled YSM `Division.ndfbin`:
+
+```powershell
+$env:WARNO_YSMXWIFXWTO_DIVISION_NDFBIN = "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"
+python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
+```
+
+You can inspect only the extracted IDs with:
+
+```powershell
+python .\tools\extract_ysmxwifxwto_division_ids.py "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"
 ```
 
 Do not commit extracted WARNO data.

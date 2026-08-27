@@ -1,4 +1,6 @@
 warno_deck_ui_macro_calibration.json
+__pycache__/
+*.pyc
 *.profile2
 *.sav3
 remotecache.vdf

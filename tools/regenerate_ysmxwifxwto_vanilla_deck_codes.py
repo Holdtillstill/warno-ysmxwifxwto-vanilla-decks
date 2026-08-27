@@ -6,6 +6,8 @@ import os
 import re
 from pathlib import Path
 
+from extract_ysmxwifxwto_division_ids import extract_division_ids
+
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_DECK_DIR = Path(
@@ -23,17 +25,37 @@ DECK_FORMAT_VERSION = 242
 MOD_HEADER_HEX = f"{0:08x}{WORKSHOP_ID:08x}{DECK_FORMAT_VERSION:08x}"
 UNIT_ID_BITS_FOR_MODDED_DECKS = 17
 UNIT_ID_BITS_FOR_VANILLA_DECKS = 13
+DIVISION_NDFBIN_ENV = "WARNO_YSMXWIFXWTO_DIVISION_NDFBIN"
 
-DIVISION_IDS = {
-    ("NATO", "limited"): 934,
-    ("PACT", "limited"): 935,
-    ("NATO", "unlimited"): 932,
-    ("PACT", "unlimited"): 933,
+TARGET_DIVISION_DESCRIPTORS = {
+    ("NATO", "limited"): "Descriptor_Deck_Division_YSM_SIDE_NATO_BALANCED",
+    ("NATO", "unlimited"): "Descriptor_Deck_Division_YSM_SIDE_NATO_UNLIMITED",
+    ("PACT", "limited"): "Descriptor_Deck_Division_YSM_SIDE_PACT_BALANCED",
+    ("PACT", "unlimited"): "Descriptor_Deck_Division_YSM_SIDE_PACT_UNLIMITED",
+}
+
+DEFAULT_DIVISION_IDS = {
+    ("NATO", "limited"): 1632,
+    ("NATO", "unlimited"): 1633,
+    ("PACT", "limited"): 1634,
+    ("PACT", "unlimited"): 1635,
 }
 
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
+
+
+def load_target_division_ids() -> dict[tuple[str, str], int]:
+    division_ndfbin = os.environ.get(DIVISION_NDFBIN_ENV)
+    if not division_ndfbin:
+        return DEFAULT_DIVISION_IDS.copy()
+
+    descriptor_to_id = extract_division_ids(Path(division_ndfbin))
+    return {
+        key: descriptor_to_id[descriptor]
+        for key, descriptor in TARGET_DIVISION_DESCRIPTORS.items()
+    }
 
 
 def normalize_descriptor(value: str) -> str:
@@ -196,6 +218,7 @@ def write_markdown(rows: list[dict[str, str]]) -> None:
 def main() -> None:
     unit_ids = parse_serializer_unit_ids(BASE_DECK_DIR / "DeckSerializer.ndf")
     division_ids = parse_serializer_division_ids(BASE_DECK_DIR / "DeckSerializer.ndf")
+    target_division_ids = load_target_division_ids()
     packs = parse_deck_packs(BASE_DECK_DIR / "DeckPacks.ndf")
     decks = parse_decks(BASE_DECK_DIR / "Decks.ndf")
 
@@ -211,13 +234,13 @@ def main() -> None:
         row["vanilla_deck_name_key"] = str(deck["deck_name_key"])
         row["ysmxwifxwto_limited_code"] = encode_deck(
             cards,
-            DIVISION_IDS[(alliance, "limited")],
+            target_division_ids[(alliance, "limited")],
             modded=False,
             unit_id_bits=UNIT_ID_BITS_FOR_MODDED_DECKS,
         )
         row["ysmxwifxwto_unlimited_code"] = encode_deck(
             cards,
-            DIVISION_IDS[(alliance, "unlimited")],
+            target_division_ids[(alliance, "unlimited")],
             modded=False,
             unit_id_bits=UNIT_ID_BITS_FOR_MODDED_DECKS,
         )
@@ -250,6 +273,10 @@ def main() -> None:
         writer.writerows(rows)
     write_markdown(rows)
     print(f"Wrote {len(rows)} decks")
+    print(
+        "Target YSM division IDs: "
+        + ", ".join(f"{alliance} {mode}={raw_id}" for (alliance, mode), raw_id in target_division_ids.items())
+    )
     print(OUT_CSV)
     print(OUT_MD)
 
