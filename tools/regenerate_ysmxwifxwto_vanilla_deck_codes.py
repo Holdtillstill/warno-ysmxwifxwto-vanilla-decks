@@ -34,6 +34,15 @@ TARGET_DIVISION_DESCRIPTORS = {
     ("PACT", "unlimited"): "Descriptor_Deck_Division_YSM_SIDE_PACT_UNLIMITED",
 }
 
+OFFICIAL_DECK_ADDITIONS = (
+    ("Descriptor_Deck_FR_ZdD_Paris_multi", "ZONE DE DEFENSE 'PARIS'", "NATO"),
+    ("Descriptor_Deck_RFA_VTK_42_multi", "VTK 42", "NATO"),
+    ("Descriptor_Deck_RDA_Rugen_Gruppierung", "RÜGENER GRUPPIERUNG", "PACT"),
+    ("Descriptor_Deck_SOV_71_Tank_multi", "71-YA TD", "PACT"),
+    ("Descriptor_Deck_SOV_DON_100_multi", "DON-100", "PACT"),
+)
+
+
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
 
@@ -209,6 +218,48 @@ def write_markdown(rows: list[dict[str, str]]) -> None:
     OUT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def add_known_official_decks(rows: list[dict[str, str]]) -> None:
+    rows_by_descriptor = {row["source_deck_descriptor"]: row for row in rows}
+    for descriptor, name, alliance in OFFICIAL_DECK_ADDITIONS:
+        if descriptor in rows_by_descriptor:
+            rows_by_descriptor[descriptor]["name"] = name
+            rows_by_descriptor[descriptor]["alliance"] = alliance
+            continue
+        row = {
+            "source_division": "",
+            "name": name,
+            "alliance": alliance,
+            "cards": "",
+            "source_deck_descriptor": descriptor,
+            "vanilla_deck_name_key": "",
+            "ysmxwifxwto_limited_code": "",
+            "ysmxwifxwto_unlimited_code": "",
+            "vanilla_official_icon_code": "",
+            "ysmxwifxwto_official_icon_code": "",
+        }
+        rows.append(row)
+        rows_by_descriptor[descriptor] = row
+
+
+def validate_official_deck_coverage(rows: list[dict[str, str]], decks: dict[str, dict[str, object]]) -> None:
+    tracked_descriptors = {row["source_deck_descriptor"] for row in rows}
+    official_descriptors = {descriptor for descriptor in decks if "_challenge_" not in descriptor.lower()}
+
+    missing_from_source = sorted(tracked_descriptors - set(decks))
+    if missing_from_source:
+        raise RuntimeError(
+            "Tracked deck descriptors are missing from the current WARNO data: "
+            + ", ".join(missing_from_source)
+        )
+
+    untracked_official = sorted(official_descriptors - tracked_descriptors)
+    if untracked_official:
+        raise RuntimeError(
+            "Current WARNO data contains untracked official deck descriptors: "
+            + ", ".join(untracked_official)
+        )
+
+
 def main() -> None:
     base_unit_ids = parse_serializer_unit_ids(BASE_DECK_DIR / "DeckSerializer.ndf")
     division_ids = parse_serializer_division_ids(BASE_DECK_DIR / "DeckSerializer.ndf")
@@ -218,6 +269,9 @@ def main() -> None:
 
     with EXISTING_CSV.open("r", newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
+
+    add_known_official_decks(rows)
+    validate_official_deck_coverage(rows, decks)
 
     for row in rows:
         deck = decks[row["source_deck_descriptor"]]

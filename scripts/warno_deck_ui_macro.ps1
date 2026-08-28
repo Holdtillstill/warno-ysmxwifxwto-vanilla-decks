@@ -362,7 +362,7 @@ if (!(Test-Path -LiteralPath $CalibrationPath)) {
     throw "Calibration not found. Run this first with -Calibrate."
 }
 
-$rows = Import-Csv -LiteralPath $CsvPath
+$rows = Import-Csv -LiteralPath $CsvPath -Encoding UTF8
 if ($rows.Count -eq 0) {
     throw "No deck rows found in $CsvPath"
 }

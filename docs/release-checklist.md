@@ -28,6 +28,8 @@ $env:WARNO_YSMXWIFXWTO_DIVISION_NDFBIN = "C:\SteamLibrary\steamapps\workshop\con
 python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
 ```
 
+Confirm the generator reports `Wrote 71 decks`. A later WARNO release may legitimately increase that count; review every newly reported non-challenge descriptor before adding it.
+
 Delete the calibration file before committing:
 
 ```powershell

@@ -14,6 +14,7 @@ The recommended codes use the mod's Freedom divisions so the decks can import wh
 
 ## What Works
 
+- 71 current official vanilla starting battlegroups, including the five additions from the latest WARNO data.
 - `Limited` mode: recommended, tested path. Imports vanilla starting decks using YSM/WiF/WTO-compatible Freedom limited divisions.
 - `Unlimited` mode: same deck contents, but targets Freedom unlimited divisions.
 - Screen-state guard: stops the importer if WARNO is not focused or does not show the expected Battlegroups/import screen.

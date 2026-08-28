@@ -75,6 +75,8 @@ $env:WARNO_YSMXWIFXWTO_DIVISION_NDFBIN = "C:\SteamLibrary\steamapps\workshop\con
 python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
 ```
 
+The generator requires every non-challenge official deck in `Decks.ndf` to be tracked. If a WARNO update adds another official battlegroup, regeneration stops and lists the untracked descriptor instead of producing an incomplete deck pack.
+
 You can inspect the extracted Freedom division IDs and unit-table size with:
 
 ```powershell
