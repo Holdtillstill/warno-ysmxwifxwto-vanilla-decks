@@ -7,7 +7,7 @@ Possible future improvements. These are ideas, not promises.
 - Auto-detect common WARNO window sizes or screen resolutions and pre-fill likely UI coordinates for the import button, deck-code field, battlegroup-name field, and final confirm button.
 - Keep manual calibration as a fallback for different UI scaling, window modes, monitor layouts, or future WARNO UI changes.
 - Add a dry-run mode that prints the deck names and selected code column without moving the mouse.
-- Add a safer pause/resume prompt every N decks for long imports.
+- Add a configurable pause/resume prompt every N decks for long imports.
 
 ## Data
 

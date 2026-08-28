@@ -22,6 +22,12 @@ param(
 
     [int]$AfterNameConfirmMs = 550,
 
+    [int]$ScreenStateTimeoutSeconds = 10,
+
+    [double]$ScreenMarkerTolerance = 0.16,
+
+    [switch]$DisableScreenStateGuard,
+
     [switch]$SkipName,
 
     [switch]$ConfirmCodeBeforeName,
@@ -43,6 +49,7 @@ if ([string]::IsNullOrWhiteSpace($CalibrationPath)) {
 }
 
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
@@ -57,6 +64,12 @@ public static class WarnoInput {
     [DllImport("user32.dll")]
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
     public const uint LEFTDOWN = 0x0002;
     public const uint LEFTUP = 0x0004;
     public const uint KEYUP = 0x0002;
@@ -66,6 +79,156 @@ public static class WarnoInput {
 function New-PointObject {
     param([int]$X, [int]$Y)
     [pscustomobject]@{ X = $X; Y = $Y }
+}
+
+function Resolve-CalibrationPoint {
+    param(
+        $Point,
+        [string]$Name
+    )
+
+    $resolved = @($Point) | Where-Object {
+        $null -ne $_ -and
+        $null -ne $_.PSObject.Properties["X"] -and
+        $null -ne $_.PSObject.Properties["Y"]
+    } | Select-Object -Last 1
+
+    if ($null -eq $resolved) {
+        throw "Calibration point '$Name' is missing or invalid. Re-run with -Calibrate."
+    }
+    return New-PointObject -X ([int]$resolved.X) -Y ([int]$resolved.Y)
+}
+
+function Get-ForegroundProcessName {
+    $window = [WarnoInput]::GetForegroundWindow()
+    if ($window -eq [IntPtr]::Zero) {
+        return $null
+    }
+
+    [uint32]$foregroundProcessId = 0
+    [WarnoInput]::GetWindowThreadProcessId($window, [ref]$foregroundProcessId) | Out-Null
+    if ($foregroundProcessId -eq 0) {
+        return $null
+    }
+
+    try {
+        return (Get-Process -Id $foregroundProcessId -ErrorAction Stop).ProcessName
+    } catch {
+        return $null
+    }
+}
+
+function Wait-ForWarnoForeground {
+    $deadline = [DateTime]::UtcNow.AddSeconds($ScreenStateTimeoutSeconds)
+    do {
+        if ((Get-ForegroundProcessName) -ieq "WARNO") {
+            return
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    throw "WARNO is not the foreground window. The importer stopped before sending any more clicks or keystrokes."
+}
+
+function Get-ScreenMarker {
+    param(
+        $Point,
+        [int]$Radius = 28,
+        [int]$Step = 4
+    )
+
+    $size = ($Radius * 2) + 1
+    $bitmap = New-Object System.Drawing.Bitmap($size, $size)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.CopyFromScreen(
+            ([int]$Point.X - $Radius),
+            ([int]$Point.Y - $Radius),
+            0,
+            0,
+            $bitmap.Size
+        )
+
+        $pixels = [System.Collections.Generic.List[int]]::new()
+        for ($y = 0; $y -lt $size; $y += $Step) {
+            for ($x = 0; $x -lt $size; $x += $Step) {
+                $color = $bitmap.GetPixel($x, $y)
+                $pixels.Add((([int]$color.R -shl 16) -bor ([int]$color.G -shl 8) -bor [int]$color.B))
+            }
+        }
+    } finally {
+        $graphics.Dispose()
+        $bitmap.Dispose()
+    }
+
+    return [pscustomobject]@{
+        radius = $Radius
+        step = $Step
+        pixels = @($pixels)
+    }
+}
+
+function Get-ScreenMarkerDifference {
+    param(
+        $Expected,
+        $Actual
+    )
+
+    $expectedPixels = @($Expected.pixels)
+    $actualPixels = @($Actual.pixels)
+    if ($expectedPixels.Count -eq 0 -or $expectedPixels.Count -ne $actualPixels.Count) {
+        return [double]::PositiveInfinity
+    }
+
+    [double]$difference = 0
+    for ($index = 0; $index -lt $expectedPixels.Count; $index++) {
+        $expectedRgb = [int]$expectedPixels[$index]
+        $actualRgb = [int]$actualPixels[$index]
+        foreach ($shift in @(16, 8, 0)) {
+            $expectedChannel = ($expectedRgb -shr $shift) -band 0xff
+            $actualChannel = ($actualRgb -shr $shift) -band 0xff
+            $difference += [Math]::Abs($expectedChannel - $actualChannel)
+        }
+    }
+
+    return $difference / ($expectedPixels.Count * 3 * 255)
+}
+
+function New-ScreenMarker {
+    param($Point)
+
+    Write-Host "Switch focus back to WARNO. Capturing the screen marker when WARNO is foreground."
+    Wait-ForWarnoForeground
+    [WarnoInput]::SetCursorPos(0, 0) | Out-Null
+    Start-Sleep -Milliseconds 300
+    return Get-ScreenMarker -Point $Point
+}
+
+function Wait-ForScreenState {
+    param(
+        [string]$Name,
+        $Point,
+        $Marker
+    )
+
+    Wait-ForWarnoForeground
+    if ($DisableScreenStateGuard) {
+        return
+    }
+
+    [WarnoInput]::SetCursorPos(0, 0) | Out-Null
+    $deadline = [DateTime]::UtcNow.AddSeconds($ScreenStateTimeoutSeconds)
+    [double]$lastDifference = [double]::PositiveInfinity
+    do {
+        $actual = Get-ScreenMarker -Point $Point -Radius ([int]$Marker.radius) -Step ([int]$Marker.step)
+        $lastDifference = Get-ScreenMarkerDifference -Expected $Marker -Actual $actual
+        if ($lastDifference -le $ScreenMarkerTolerance) {
+            return
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    throw ("WARNO did not reach the expected '{0}' screen. The importer stopped before continuing. Marker difference: {1:N3}; tolerance: {2:N3}." -f $Name, $lastDifference, $ScreenMarkerTolerance)
 }
 
 function Capture-Point {
@@ -83,7 +246,7 @@ function Capture-Point {
             return $null
         }
     } else {
-        Read-Host "Hover over '$Name' and press Enter here"
+        $null = Read-Host "Hover over '$Name' and press Enter here"
     }
 
     $position = [System.Windows.Forms.Cursor]::Position
@@ -152,16 +315,20 @@ if ($Calibrate) {
     Write-Host "Put WARNO in windowed or borderless mode. Do not move or resize the window after calibration."
     Write-Host "Start on Armory -> Battlegroups, where the Import button is visible."
 
-    $calibration = [ordered]@{}
+    $calibration = [ordered]@{
+        version = 2
+    }
     $calibration.importButton = Capture-Point `
         -Name "Import button" `
         -Instructions "Hover over the Battlegroups Import button."
+    $calibration.battlegroupsMarker = New-ScreenMarker -Point $calibration.importButton
 
     Write-Host ""
     Write-Host "Now manually click WARNO's Import button so the code-entry dialog is open."
     $calibration.codeField = Capture-Point `
         -Name "Deck code text field" `
         -Instructions "Hover over the deck-code text field."
+    $calibration.importDialogMarker = New-ScreenMarker -Point $calibration.codeField
 
     $calibration.codeConfirm = Capture-Point `
         -Name "Separate code confirm button" `
@@ -204,6 +371,23 @@ if ($StartAt -lt 1 -or $StartAt -gt $rows.Count) {
 }
 
 $calibration = Get-Content -LiteralPath $CalibrationPath -Raw | ConvertFrom-Json
+$calibration.importButton = Resolve-CalibrationPoint -Point $calibration.importButton -Name "Import button"
+$calibration.codeField = Resolve-CalibrationPoint -Point $calibration.codeField -Name "Deck code text field"
+if ($null -ne $calibration.codeConfirm) {
+    $calibration.codeConfirm = Resolve-CalibrationPoint -Point $calibration.codeConfirm -Name "Code confirm button"
+}
+if ($null -ne $calibration.nameField) {
+    $calibration.nameField = Resolve-CalibrationPoint -Point $calibration.nameField -Name "Deck name text field"
+}
+if ($null -ne $calibration.nameConfirm) {
+    $calibration.nameConfirm = Resolve-CalibrationPoint -Point $calibration.nameConfirm -Name "Final save/confirm button"
+}
+
+if (!$DisableScreenStateGuard) {
+    if ([int]$calibration.version -lt 2 -or $null -eq $calibration.battlegroupsMarker -or $null -eq $calibration.importDialogMarker) {
+        throw "Calibration predates the screen-state safety guard. Re-run with -Calibrate before importing."
+    }
+}
 $codeColumn = switch ($Mode) {
     "Limited" { "ysmxwifxwto_limited_code" }
     "Unlimited" { "ysmxwifxwto_unlimited_code" }
@@ -233,15 +417,18 @@ Write-Host "Rows: $StartAt through $endExclusive of $($rows.Count)"
 Warn-IfWarnoNeedsRestart
 Write-Host "Starting in $StartDelaySeconds seconds. Switch focus to WARNO and leave the Battlegroups screen visible."
 Start-Sleep -Seconds $StartDelaySeconds
+Wait-ForScreenState -Name "Battlegroups list" -Point $calibration.importButton -Marker $calibration.battlegroupsMarker
 
 for ($index = $StartAt - 1; $index -lt $endExclusive; $index++) {
     $row = $rows[$index]
     $number = $index + 1
     Write-Host "Importing [$number/$($rows.Count)] $($row.alliance) - $($row.name)"
 
+    Wait-ForScreenState -Name "Battlegroups list" -Point $calibration.importButton -Marker $calibration.battlegroupsMarker
     Click-Point $calibration.importButton
     Start-Sleep -Milliseconds $AfterImportClickMs
 
+    Wait-ForScreenState -Name "Battlegroup import dialog" -Point $calibration.codeField -Marker $calibration.importDialogMarker
     Click-Point $calibration.codeField
     Start-Sleep -Milliseconds 150
     Paste-ClipboardText -Text $row.$codeColumn
@@ -269,9 +456,10 @@ for ($index = $StartAt - 1; $index -lt $endExclusive; $index++) {
         Send-KeyDownUp -VirtualKey 0x0D
     }
     Start-Sleep -Milliseconds $AfterNameConfirmMs
+    Wait-ForScreenState -Name "Battlegroups list after saving '$($row.name)'" -Point $calibration.importButton -Marker $calibration.battlegroupsMarker
 
     if ($ConfirmEach -and $index -lt ($endExclusive - 1)) {
-        $answer = Read-Host "Press Enter for next deck, or type q to stop"
+        $answer = Read-Host "Press Enter for next deck, then switch back to WARNO; or type q to stop"
         if ($answer -eq "q") {
             break
         }

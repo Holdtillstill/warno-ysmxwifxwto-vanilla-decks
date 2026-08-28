@@ -11,6 +11,8 @@ If `-Mode Limited` also fails, fully close WARNO and reopen it. WARNO reads the 
 
 If this starts immediately after a YSM x WiF x WTO update, the mod may have changed its Workshop deck header, Freedom division IDs, unit IDs, or several of them together. Re-run the maintainer generator with `WARNO_YSMXWIFXWTO_DIVISION_NDFBIN` set to the current Workshop `Division.ndfbin`, then compare the generated format with a fresh deck exported by the game.
 
+If a deck imports but contains only a few incorrect units, regenerate from the current WARNO base deck data. Vanilla cards must use the current base-game `UnitIds`; the mod's compiled build-time unit table is only authoritative for mod-added units.
+
 ## Macro Clicks Import Before Naming
 
 Re-run calibration:
@@ -20,6 +22,8 @@ powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Ca
 ```
 
 When asked for a separate code confirm button, skip it unless WARNO truly has a separate validation button before the battlegroup-name field.
+
+The current calibration format includes visual screen markers. Old calibration files are rejected so the macro cannot continue clicking after WARNO lands on the wrong tab or an error dialog.
 
 ## Text Does Not Paste Or Clicks Are Missed
 

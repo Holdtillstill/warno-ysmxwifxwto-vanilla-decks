@@ -6,7 +6,7 @@ import os
 import re
 from pathlib import Path
 
-from extract_ysmxwifxwto_division_ids import extract_serializer_ids
+from extract_ysmxwifxwto_division_ids import extract_division_ids
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,19 +38,18 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
 
 
-def load_mod_serializer_ids() -> tuple[dict[tuple[str, str], int], dict[str, int]]:
+def load_target_division_ids() -> dict[tuple[str, str], int]:
     division_ndfbin = os.environ.get(DIVISION_NDFBIN_ENV)
     if not division_ndfbin:
         raise RuntimeError(
             f"Set {DIVISION_NDFBIN_ENV} to the current YSM x WiF x WTO Division.ndfbin. "
-            "The generator needs the mod's current division and unit serializer IDs."
+            "The generator needs the mod's current Freedom division serializer IDs."
         )
 
-    descriptor_to_id, unit_ids = extract_serializer_ids(Path(division_ndfbin))
-    target_division_ids = {
+    descriptor_to_id = extract_division_ids(Path(division_ndfbin))
+    return {
         key: descriptor_to_id[descriptor] for key, descriptor in TARGET_DIVISION_DESCRIPTORS.items()
     }
-    return target_division_ids, unit_ids
 
 
 def normalize_descriptor(value: str) -> str:
@@ -213,7 +212,7 @@ def write_markdown(rows: list[dict[str, str]]) -> None:
 def main() -> None:
     base_unit_ids = parse_serializer_unit_ids(BASE_DECK_DIR / "DeckSerializer.ndf")
     division_ids = parse_serializer_division_ids(BASE_DECK_DIR / "DeckSerializer.ndf")
-    target_division_ids, mod_unit_ids = load_mod_serializer_ids()
+    target_division_ids = load_target_division_ids()
     packs = parse_deck_packs(BASE_DECK_DIR / "DeckPacks.ndf")
     decks = parse_decks(BASE_DECK_DIR / "Decks.ndf")
 
@@ -223,18 +222,17 @@ def main() -> None:
     for row in rows:
         deck = decks[row["source_deck_descriptor"]]
         base_cards = build_cards(deck, packs, base_unit_ids)
-        mod_cards = build_cards(deck, packs, mod_unit_ids)
         alliance = row["alliance"]
         row["source_division"] = str(deck["division"])
         row["cards"] = str(len(base_cards))
         row["vanilla_deck_name_key"] = str(deck["deck_name_key"])
         row["ysmxwifxwto_limited_code"] = encode_deck(
-            mod_cards,
+            base_cards,
             target_division_ids[(alliance, "limited")],
             unit_id_bits=UNIT_ID_BITS_FOR_MODDED_DECKS,
         )
         row["ysmxwifxwto_unlimited_code"] = encode_deck(
-            mod_cards,
+            base_cards,
             target_division_ids[(alliance, "unlimited")],
             unit_id_bits=UNIT_ID_BITS_FOR_MODDED_DECKS,
         )
@@ -247,7 +245,7 @@ def main() -> None:
             modded=False,
             unit_id_bits=UNIT_ID_BITS_FOR_VANILLA_DECKS,
         )
-        row["ysmxwifxwto_official_icon_code"] = encode_deck(mod_cards, division_ids[source_division])
+        row["ysmxwifxwto_official_icon_code"] = encode_deck(base_cards, division_ids[source_division])
 
     fieldnames = [
         "source_division",
@@ -271,7 +269,6 @@ def main() -> None:
         "Target YSM division IDs: "
         + ", ".join(f"{alliance} {mode}={raw_id}" for (alliance, mode), raw_id in target_division_ids.items())
     )
-    print(f"Loaded {len(mod_unit_ids)} YSM unit IDs")
     print(OUT_CSV)
     print(OUT_MD)
 

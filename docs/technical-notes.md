@@ -18,7 +18,7 @@ division IDs = YSM Freedom division IDs
 unit ID width = 17 bits
 ```
 
-Older YSM versions were observed accepting no-header strings. The August 2026 update requires the current Workshop header in addition to the current division and unit IDs.
+Older YSM versions were observed accepting no-header strings. The August 2026 update requires the current Workshop header and current Freedom division IDs.
 
 ## Working Division IDs
 
@@ -31,7 +31,9 @@ PACT Limited    = 1634  Descriptor_Deck_Division_YSM_SIDE_PACT_BALANCED
 PACT Unlimited  = 1635  Descriptor_Deck_Division_YSM_SIDE_PACT_UNLIMITED
 ```
 
-Older versions of the mod used four generic YSM division IDs, `932` through `935`. The August 2026 mod update replaced those descriptors with side-wide balanced/unlimited descriptors. It also reordered the mod's unit serializer table. Deck codes need both the current division ID and the current mod unit IDs; mixing the new division IDs with vanilla unit IDs is still rejected as an invalid battlegroup.
+Older versions of the mod used four generic YSM division IDs, `932` through `935`. The August 2026 mod update replaced those descriptors with side-wide balanced/unlimited descriptors.
+
+For vanilla units, imported deck codes must keep WARNO's current base-game unit IDs. The compiled mod contains its own build-time `UnitIds` table, but WARNO's runtime merge preserves current base serializer IDs for base units. Encoding vanilla cards with the mod's build-time IDs produces the wrong units and silently drops cards that are invalid in the target Freedom division.
 
 ## Why Official Division Emblems Are Hard
 
@@ -66,7 +68,7 @@ $env:WARNO_BASE_DECK_DIR = "C:\path\to\GameData\Generated\Gameplay\Decks"
 python .\tools\regenerate_ysmxwifxwto_vanilla_deck_codes.py
 ```
 
-Point the generator at the compiled YSM `Division.ndfbin` so it can read the current Freedom division IDs and the mod's complete unit-ID table:
+Point the generator at the compiled YSM `Division.ndfbin` so it can read the current Freedom division IDs:
 
 ```powershell
 $env:WARNO_YSMXWIFXWTO_DIVISION_NDFBIN = "C:\SteamLibrary\steamapps\workshop\content\1611600\3554281691\Gen\NDF\GFX\Division.ndfbin"

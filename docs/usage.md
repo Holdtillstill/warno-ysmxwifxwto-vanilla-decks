@@ -29,7 +29,9 @@ Run calibration once after cloning/downloading the project:
 powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Calibrate
 ```
 
-The script will ask you to hover over WARNO UI controls and press Enter in PowerShell. Keep WARNO in the same window position and resolution after calibration.
+The script will ask you to hover over WARNO UI controls and press Enter in PowerShell, then switch focus back to WARNO so it can record small visual markers for the Battlegroups list and import dialog. Keep WARNO in the same window position and resolution after calibration.
+
+Re-run calibration after updating from an older release. Earlier calibration files did not include screen-state markers.
 
 Calibration is saved to:
 
@@ -48,6 +50,8 @@ powershell -ExecutionPolicy Bypass -File ".\scripts\warno_deck_ui_macro.ps1" -Mo
 ```
 
 Switch focus to WARNO before the countdown ends. Leave the Battlegroups screen visible.
+
+Before every click sequence, the importer verifies that WARNO is in the foreground and showing the expected screen. If an import fails or WARNO does not return to the Battlegroups list, the script stops instead of continuing to click blindly.
 
 ## Import a Small Test Batch
 
