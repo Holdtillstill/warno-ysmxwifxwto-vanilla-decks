@@ -8,15 +8,17 @@ The generated compatibility codes are intended for Steam Workshop item:
 3554281691
 ```
 
-Current in-game exports from YSM x WiF x WTO were observed to use no Workshop header:
+Current in-game exports from YSM x WiF x WTO use the Workshop header:
 
 ```text
-modded flag = 0
+modded flag = 1
+workshop ID = 3554281691
+deck format version = 242
 division IDs = YSM Freedom division IDs
 unit ID width = 17 bits
 ```
 
-Older Workshop-shared codes used a Workshop header with `workshop_id = 3554281691` and `deck_format_version = 242`, but those strings are rejected by the current mod/game combination.
+Older YSM versions were observed accepting no-header strings. The August 2026 update requires the current Workshop header in addition to the current division and unit IDs.
 
 ## Working Division IDs
 
